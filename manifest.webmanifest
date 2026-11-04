@@ -1,9 +1,0 @@
-{
-  "name": "母ちゃんの漢字道場",
-  "short_name": "漢字道場",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#fff0f6",
-  "theme_color": "#f8a9c8",
-  "orientation": "portrait"
-}
