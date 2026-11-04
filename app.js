@@ -1,0 +1,20 @@
+let BANK={},level=Number(localStorage.getItem("dojoLevel")||0),currentMode="all",currentQuestion=null,locked=false,asked={};
+const categories={kanji:"漢字の読み取り",idiom_meaning:"四字熟語の意味",idiom_hole:"四字熟語の穴埋め",history:"歴史・発明問題"};
+const birds=["🥚","🐤","🐥","🐦","🐦‍⬛","🦅","🦉","🦜","🦚","🦢","🔥🦅"];
+const praise=["やる〜！","凄い！","その調子！","さすが！","天才！"];
+const $=id=>document.getElementById(id);
+async function init(){try{const r=await fetch("questions.json");BANK=await r.json();}catch(e){alert("問題データを読み込めませんでした。index.htmlとquestions.jsonを同じフォルダに置いてね。");return;}renderLevel();if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("sw.js").catch(()=>{});}}
+function stage(l){return Math.min(10,Math.floor(l/10));}
+function birdFor(l){return birds[stage(l)];}
+function renderLevel(){$("topLevel").textContent="Lv "+level;$("homeLevel").textContent=level;$("homeBird").textContent=birdFor(level);$("homeBirdLv").textContent="Lv "+level; $("meterFill").style.width=(level%10)*10+"%";$("nextText").textContent=level===100?"最高レベル！鳳凰が完成！":"次の進化まであと "+(10-level%10)+" 問！";}
+function hideAll(){["home","game","result","rules"].forEach(x=>$(x).classList.add("hidden"));}
+function goHome(){hideAll();$("home").classList.remove("hidden");renderLevel();}
+function showRules(){hideAll();$("rules").classList.remove("hidden");}
+function startGame(mode){currentMode=mode;hideAll();$("game").classList.remove("hidden");nextQuestion();}
+function poolForMode(){return currentMode==="all"?Object.keys(BANK):[currentMode];}
+function getQuestion(){let cats=poolForMode();let cat=cats[Math.floor(Math.random()*cats.length)];let band=Math.floor(level/10);let key=cat+"_"+band;asked[key]??=[];let pool=BANK[cat]||[];let start=band*10;let bandPool=pool.slice(start,start+10);if(!bandPool.length)bandPool=pool;let available=bandPool.filter(q=>!asked[key].includes(q.id));if(!available.length){asked[key]=[];available=bandPool.slice();}let q=available[Math.floor(Math.random()*available.length)];asked[key].push(q.id);return q;}
+function nextQuestion(){locked=false;$("feedback").classList.add("hidden");currentQuestion=getQuestion();$("categoryLabel").textContent=categories[currentQuestion.category];$("gameLevel").textContent="Lv "+level;$("questionText").textContent=currentQuestion.prompt;$("progressText").textContent="正解を選んでね！";let wrap=$("choices");wrap.innerHTML="";currentQuestion.choices.forEach(choice=>{let b=document.createElement("button");b.className="choice";b.textContent=choice;b.onclick=()=>answer(choice,b);wrap.appendChild(b);});}
+function answer(choice,btn){if(locked)return;locked=true;[...$("choices").children].forEach(b=>b.disabled=true);let ok=choice===currentQuestion.answer;let fb=$("feedback");fb.classList.remove("hidden");if(ok){level=Math.min(100,level+1);localStorage.setItem("dojoLevel",level);renderLevel();fb.className="feedback correct";fb.textContent="⭕ 正解！！ "+praise[Math.floor(Math.random()*praise.length)];$("progressText").textContent="レベル "+level+" にアップ！";setTimeout(()=>{if(level===100)showSuccess(true);else nextQuestion();},1100);}else{level=0;localStorage.setItem("dojoLevel",0);renderLevel();fb.className="feedback wrong";fb.textContent="❌ おしい！正解は「"+currentQuestion.answer+"」";$("progressText").textContent="もう一度挑戦しよう！";setTimeout(()=>showFailure(),1200);}}
+function showSuccess(max=false){hideAll();$("result").classList.remove("hidden");$("resultTitle").textContent="🎉 やる〜！レベル100達成！";$("resultBird").textContent=birdFor(100);$("resultBirdLv").textContent="Lv 100";$("resultText").textContent="⭕ 正解！！ 鳳凰の誕生！";}
+function showFailure(){hideAll();$("result").classList.remove("hidden");$("resultTitle").textContent="🌸 また挑戦しよう！";$("resultBird").textContent="🐥💦";$("resultBirdLv").textContent="Lv 0";$("resultText").textContent="❌ 間違えちゃった！レベル0から再スタートだよ。";}
+init();
