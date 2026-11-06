@@ -1,5 +1,5 @@
 // Change RELEASE in this file and in index.html together on each deployment.
-const RELEASE = "20261107-1";
+const RELEASE = "20261107-2";
 const SCOPE = new URL(self.registration.scope);
 const CACHE_PREFIX = "kanji-dojo:" + SCOPE.pathname + ":";
 const CACHE = CACHE_PREFIX + RELEASE;
