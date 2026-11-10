@@ -1,12 +1,13 @@
 // Change RELEASE in this file and in index.html together on each deployment.
-const RELEASE = "20261107-3";
+const RELEASE = "20261110-1";
 const SCOPE = new URL(self.registration.scope);
 const CACHE_PREFIX = "kanji-dojo:" + SCOPE.pathname + ":";
 const CACHE = CACHE_PREFIX + RELEASE;
 const INDEX = new URL("index.html", SCOPE);
 const QUESTIONS = new URL("questions.json", SCOPE);
 const MANIFEST = new URL("manifest.webmanifest", SCOPE);
-const FILES = [INDEX, QUESTIONS, MANIFEST];
+const ICONS = ["icon-192.png", "icon-512.png"].map((name) => new URL(name, SCOPE));
+const FILES = [INDEX, QUESTIONS, MANIFEST, ...ICONS];
 
 async function installRelease() {
   const files = await Promise.all(FILES.map(async (url) => {
@@ -15,7 +16,10 @@ async function installRelease() {
     if (url === INDEX && !(await response.clone().text()).includes('name="dojo-release" content="' + RELEASE + '"')) {
       throw new Error("Waiting for the matching HTML release");
     }
-    if (url !== INDEX) await response.clone().json();
+    if (url === QUESTIONS || url === MANIFEST) await response.clone().json();
+    if (ICONS.includes(url) && !response.headers.get("content-type")?.startsWith("image/png")) {
+      throw new Error("Invalid launcher icon: " + url.pathname);
+    }
     return [url.href, response];
   }));
   const cache = await caches.open(CACHE);
@@ -66,6 +70,6 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(onlineFirst(request, INDEX.href));
     return;
   }
-  const asset = [QUESTIONS, MANIFEST].find((file) => file.pathname === url.pathname);
+  const asset = [QUESTIONS, MANIFEST, ...ICONS].find((file) => file.pathname === url.pathname);
   if (asset) event.respondWith(onlineFirst(request, asset.href));
 });
